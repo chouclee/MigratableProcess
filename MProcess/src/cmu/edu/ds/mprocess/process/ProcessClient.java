@@ -7,27 +7,26 @@ import java.net.Socket;
 
 public class ProcessClient implements Runnable {
   private Socket client;
-  
+
   public ProcessClient(Socket socket) {
     this.client = socket;
   }
-  
+
   public void run() {
     try {
       ObjectInputStream in = new ObjectInputStream(client.getInputStream());
-      //DataOutputStream out = new DataOutputStream(client.getOutputStream());
-      
+      DataOutputStream out = new DataOutputStream(client.getOutputStream());
+
       Object obj = in.readObject();
       MigratableProcess process = null;
-      
+
       if (obj instanceof MigratableProcess) {
         process = (MigratableProcess) obj;
-        //out.writeBoolean(true);
+        out.writeBoolean(true);
         ProcessManager.getInstance().launchingProcess(process);
-      } 
-      //else {
-      //  out.writeBoolean(false);
-      //}
+      } else {
+        out.writeBoolean(false);
+      }
     } catch (IOException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();

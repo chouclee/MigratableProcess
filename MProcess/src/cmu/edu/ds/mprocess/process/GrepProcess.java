@@ -25,10 +25,10 @@ public class GrepProcess implements MigratableProcess {
   private String query;
 
   private volatile boolean suspending;
-  
+
   private String[] args;
-  
-  //private boolean finished = false;
+
+  // private boolean finished = false;
 
   public GrepProcess(String args[]) throws Exception {
     this.args = args;
@@ -44,13 +44,13 @@ public class GrepProcess implements MigratableProcess {
 
   public void run() {
     PrintStream out = new PrintStream(outFile);
-    //BufferedReader in = new BufferedReader(new InputStreamReader(inFile));
+    // BufferedReader in = new BufferedReader(new InputStreamReader(inFile));
     DataInputStream in = new DataInputStream(inFile);
     try {
       while (!suspending) {
         @SuppressWarnings("deprecation")
         String line = in.readLine();
-        //System.out.println("processing to " + inFile.getOffset() + " bytes...");
+        // System.out.println("processing to " + inFile.getOffset() + " bytes...");
         if (line == null) {
           System.out.println("processing finished");
           break;
@@ -73,7 +73,7 @@ public class GrepProcess implements MigratableProcess {
     } catch (IOException e) {
       System.out.println("GrepProcess: Error: " + e);
     } finally {
-      //finished = true;
+      // finished = true;
       ProcessManager.getInstance().removeProcess(this);
       suspending = false;
     }
@@ -90,13 +90,14 @@ public class GrepProcess implements MigratableProcess {
       }
     }
   }
-  
+
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("GrepProcess ");
     for (String str : args)
       sb.append(str + " ");
-    sb.append(suspending ? "\tFinished." : "\tIn progress...");
+    sb.append(suspending ? "\tFinished." : "\tIn progress, has processed " + inFile.getOffset()
+            + " bytes...");
     return sb.toString();
   }
 

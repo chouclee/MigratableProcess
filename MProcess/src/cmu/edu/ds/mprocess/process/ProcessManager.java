@@ -1,6 +1,7 @@
 package cmu.edu.ds.mprocess.process;
 
 import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
@@ -13,13 +14,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ProcessManager {
   private static final ProcessManager INSTANCE = new ProcessManager();
+
   private ConcurrentHashMap<Long, MigratableProcess> processPool;
+
   private ConcurrentHashMap<MigratableProcess, Long> idPool;
 
   private static long processSeqNumber;
-  
-  //private Set<Class<? extends MigratableProcess>> migratableProcessSet;
-  
+
   private ProcessManager() {
     processPool = new ConcurrentHashMap<Long, MigratableProcess>();
     idPool = new ConcurrentHashMap<>();
@@ -29,7 +30,7 @@ public class ProcessManager {
   public static ProcessManager getInstance() {
     return INSTANCE;
   }
-  
+
   public void launchingProcess(String className, String... args) throws ClassNotFoundException,
           InstantiationException, IllegalAccessException, IllegalArgumentException,
           InvocationTargetException, NoSuchMethodException, SecurityException {
@@ -53,16 +54,16 @@ public class ProcessManager {
               + " has not implemented MigratableProcess Interface");
     }
   }
-  
+
   public void launchingProcess(MigratableProcess processInstance) {
-    System.out.println("Migrated...\n" + ((GrepProcess)processInstance).toString());
+    System.out.println("Migrated...\n" + ((GrepProcess) processInstance).toString());
     Thread t = new Thread(processInstance);
     t.start();
     long id = nextProcessID();
     processPool.putIfAbsent(id, processInstance);
     idPool.putIfAbsent(processInstance, id);
   }
-  
+
   public void removeProcess(MigratableProcess processInstance) {
     long id = idPool.get(processInstance);
     idPool.remove(processInstance);
@@ -75,9 +76,9 @@ public class ProcessManager {
   private static synchronized long nextProcessID() {
     return ++processSeqNumber;
   }
-  
+
   public void startServer() {
-    Thread t = new Thread(new ProcessServer(0));
+    Thread t = new Thread(new ProcessServer(0)); // use any free port
     t.start();
   }
 
@@ -134,10 +135,10 @@ public class ProcessManager {
     for (Long id : idPool)
       System.out.println("ID=" + id + "\t" + processPool.get(id).toString());
   }
-  
+
   private void commandLaunch(String[] args) {
     if (args.length <= 1) {
-      System.out.println("Usage: run Classname args1 args2 ...");
+      System.out.println("Usage: run classname args1 args2 ...");
       return;
     }
     if (args.length == 2) {
@@ -147,26 +148,26 @@ public class ProcessManager {
               | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
               | SecurityException e) {
         // TODO Auto-generated catch block
-        System.err.println("Failed to lauch process");
+        System.err.println("Failed to launch process");
       }
     } else {
       String[] classArgs = new String[args.length - 2];
       for (int i = 2; i < args.length; i++)
-        classArgs[i-2] = args[i];
+        classArgs[i - 2] = args[i];
       try {
         launchingProcess(args[1], classArgs);
       } catch (ClassNotFoundException | InstantiationException | IllegalAccessException
               | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
               | SecurityException e) {
         // TODO Auto-generated catch block
-        System.err.println("Failed to lauch process");
+        System.err.println("Failed to launch process");
       }
     }
   }
 
   private void commandMG(String[] args) {
     if (args.length <= 3) {
-      System.out.println("Usage: mg processID hostname port");
+      System.out.println("Usage: mg processID hostIPAddress port");
       return;
     }
 
@@ -176,33 +177,39 @@ public class ProcessManager {
       System.err.println("No such process, process ID = " + id);
       return;
     }
-    String hostname = args[2];
+    String hostIP = args[2];
     int port = Integer.parseInt(args[3]);
     Socket socket = null;
     try {
-      socket = new Socket(hostname, port);
+      socket = new Socket(hostIP, port);
       process.suspend();
-      startMigrating(socket, process, hostname);
+      migrate(socket, process, hostIP);
       socket.close();
     } catch (IOException e) {
-      System.err.println("Failed to connect " + hostname);
+      System.err.println("Failed to connect " + hostIP);
     }
 
   }
 
-  private void startMigrating(Socket socket, MigratableProcess process, String hostname) throws IOException {
+  private void migrate(Socket socket, MigratableProcess process, String hostIP) throws IOException {
     // TODO Auto-generated method stub
     ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+    DataInputStream in = new DataInputStream(socket.getInputStream());
+    boolean successful = false;
     try {
       out.writeObject(process);
+      successful = in.readBoolean();
     } catch (IOException e) {
-      System.err.println("Failed to migrate process to " + hostname);
-      return;
+      System.err.println("Failed to migrate process to " + hostIP + " due to IOException");
+    } finally {
+      if (!successful)
+        System.out.println("Ready to restart process in current server...");
+      out.close();
+      in.close();
+      socket.close();
     }
-    out.close();
-    socket.close();
   }
-  
+
   private void commandQuit() {
     System.out.println("Quit...");
     System.exit(0);

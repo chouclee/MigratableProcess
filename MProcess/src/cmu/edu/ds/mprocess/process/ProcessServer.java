@@ -5,11 +5,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class ProcessServer implements Runnable {
-  // public static final int PORT = 8888;
-  //public static final String HOSTNAME = "localhost";
 
   private ServerSocket server;
-  
+
   private boolean running;
 
   public ProcessServer(int port) {
@@ -38,13 +36,13 @@ public class ProcessServer implements Runnable {
 
   public void run() {
     running = true;
-    while(running) {
+    while (running) {
       accept();
     }
   }
-  
+
   public void stop() {
     running = false;
   }
-  
+
 }

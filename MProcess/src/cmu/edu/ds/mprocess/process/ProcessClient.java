@@ -6,9 +6,6 @@ import java.io.ObjectInputStream;
 import java.net.Socket;
 
 public class ProcessClient implements Runnable {
-  //public static final int PORT = 8888;
-  public static final String HOSTNAME = "localhost";
-  
   private Socket client;
   
   public ProcessClient(Socket socket) {

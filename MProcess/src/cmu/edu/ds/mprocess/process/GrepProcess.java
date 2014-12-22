@@ -1,5 +1,6 @@
 package cmu.edu.ds.mprocess.process;
 
+import java.io.DataInputStream;
 import java.io.PrintStream;
 import java.io.EOFException;
 import java.io.InputStreamReader;
@@ -27,7 +28,7 @@ public class GrepProcess implements MigratableProcess {
   
   private String[] args;
   
-  private boolean finished = false;
+  //private boolean finished = false;
 
   public GrepProcess(String args[]) throws Exception {
     this.args = args;
@@ -43,14 +44,17 @@ public class GrepProcess implements MigratableProcess {
 
   public void run() {
     PrintStream out = new PrintStream(outFile);
-    BufferedReader in = new BufferedReader(new InputStreamReader(inFile));
-
+    //BufferedReader in = new BufferedReader(new InputStreamReader(inFile));
+    DataInputStream in = new DataInputStream(inFile);
     try {
       while (!suspending) {
+        @SuppressWarnings("deprecation")
         String line = in.readLine();
-
-        if (line == null)
+        //System.out.println("processing to " + inFile.getOffset() + " bytes...");
+        if (line == null) {
+          System.out.println("processing finished");
           break;
+        }
 
         if (line.contains(query)) {
           out.println(line);
@@ -59,7 +63,7 @@ public class GrepProcess implements MigratableProcess {
         // Make grep take longer so that we don't require extremely large files for interesting
         // results
         try {
-          Thread.sleep(1500);
+          Thread.sleep(3000);
         } catch (InterruptedException e) {
           // ignore it
         }
@@ -68,14 +72,23 @@ public class GrepProcess implements MigratableProcess {
       // End of File
     } catch (IOException e) {
       System.out.println("GrepProcess: Error: " + e);
+    } finally {
+      //finished = true;
+      ProcessManager.getInstance().removeProcess(this);
+      suspending = false;
     }
-    finished = true;
-    suspending = false;
   }
 
   public void suspend() {
     suspending = true;
-    while (suspending);
+    while (suspending) {
+      try {
+        Thread.sleep(10);
+      } catch (InterruptedException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
+    }
   }
   
   public String toString() {
@@ -83,7 +96,7 @@ public class GrepProcess implements MigratableProcess {
     sb.append("GrepProcess ");
     for (String str : args)
       sb.append(str + " ");
-    sb.append(finished ? "\tFinished." : "\tIn progress...");
+    sb.append(suspending ? "\tFinished." : "\tIn progress...");
     return sb.toString();
   }
 

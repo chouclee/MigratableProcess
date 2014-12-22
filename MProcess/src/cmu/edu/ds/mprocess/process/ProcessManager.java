@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ProcessManager {
   private static final ProcessManager INSTANCE = new ProcessManager();
   private ConcurrentHashMap<Long, MigratableProcess> processPool;
+  private ConcurrentHashMap<MigratableProcess, Long> idPool;
 
   private static long processSeqNumber;
   
@@ -21,6 +22,7 @@ public class ProcessManager {
   
   private ProcessManager() {
     processPool = new ConcurrentHashMap<Long, MigratableProcess>();
+    idPool = new ConcurrentHashMap<>();
     processSeqNumber = -1;
   }
 
@@ -43,7 +45,9 @@ public class ProcessManager {
 
       Thread t = new Thread(processInstance);
       t.start();
-      processPool.putIfAbsent(nextProcessID(), processInstance);
+      long id = nextProcessID();
+      processPool.putIfAbsent(id, processInstance);
+      idPool.putIfAbsent(processInstance, id);
     } else {
       System.err.println("The Class " + className
               + " has not implemented MigratableProcess Interface");
@@ -51,9 +55,18 @@ public class ProcessManager {
   }
   
   public void launchingProcess(MigratableProcess processInstance) {
+    System.out.println("Migrated...\n" + ((GrepProcess)processInstance).toString());
     Thread t = new Thread(processInstance);
     t.start();
-    processPool.putIfAbsent(nextProcessID(), processInstance);
+    long id = nextProcessID();
+    processPool.putIfAbsent(id, processInstance);
+    idPool.putIfAbsent(processInstance, id);
+  }
+  
+  public void removeProcess(MigratableProcess processInstance) {
+    long id = idPool.get(processInstance);
+    idPool.remove(processInstance);
+    processPool.remove(id);
   }
 
   /*
@@ -119,7 +132,7 @@ public class ProcessManager {
 
     Collections.sort(idPool);
     for (Long id : idPool)
-      System.out.println(processPool.get(id).toString());
+      System.out.println("ID=" + id + "\t" + processPool.get(id).toString());
   }
   
   private void commandLaunch(String[] args) {

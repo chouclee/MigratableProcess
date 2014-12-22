@@ -4,8 +4,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
+import java.io.Serializable;
 
-public class TransactionalFileInputStream extends InputStream {
+public class TransactionalFileInputStream extends InputStream implements Serializable {
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 10L;
   private long offset;
   private File file;
   private transient RandomAccessFile fileHandler;
@@ -38,6 +43,10 @@ public class TransactionalFileInputStream extends InputStream {
     if (result != -1)
       offset += result;
     return result;
+  }
+  
+  public long getOffset() {
+    return offset;
   }
   
   public static void main(String[] args) throws IOException {

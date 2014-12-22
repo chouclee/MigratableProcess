@@ -6,14 +6,17 @@ import java.net.Socket;
 
 public class ProcessServer implements Runnable {
   // public static final int PORT = 8888;
-  public static final String HOSTNAME = "localhost";
+  //public static final String HOSTNAME = "localhost";
 
   private ServerSocket server;
+  
+  private boolean running;
 
   public ProcessServer(int port) {
     try {
       server = new ServerSocket(port);
       System.out.println("Starting server on port: " + server.getLocalPort());
+      System.out.println("IP Address: " + server.getInetAddress());
     } catch (IOException e) {
       // TODO Auto-generated catch block
       System.err.println("Failed to open port " + port);
@@ -25,6 +28,7 @@ public class ProcessServer implements Runnable {
     Socket client = null;
     try {
       client = server.accept();
+      new Thread(new ProcessClient(client)).start();
     } catch (IOException e) {
       // TODO Auto-generated catch block
       System.err.println("Server acception error");
@@ -33,6 +37,14 @@ public class ProcessServer implements Runnable {
   }
 
   public void run() {
-    accept();
+    running = true;
+    while(running) {
+      accept();
+    }
   }
+  
+  public void stop() {
+    running = false;
+  }
+  
 }
